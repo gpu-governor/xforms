@@ -1,7 +1,7 @@
 CC = gcc
-SRC = main.c
+SRC = con.c
 EXE = main
-LIBS = -lX11
+LIBS = -lSDL2 -lSDL2_ttf
 
 build:
 	$(CC) $(SRC) -o $(EXE) $(LIBS)
