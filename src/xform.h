@@ -4,10 +4,11 @@
 
 /// ============================ WINDOW STRUCT ============================
 typedef struct {
-    SDL_Window *window;
-    SDL_Renderer *renderer;
     TTF_Font *defaultFont;
 } xiWindow;
+
+SDL_Window *gwindow;
+SDL_Renderer *grenderer;
 
 /// ============================ COLOR STRUCT ============================
 typedef struct {
@@ -130,19 +131,19 @@ xiWindow xiCreateWindow(const char *title, int width, int height) {
         return xiWin;
     }
 
-    xiWin.window = SDL_CreateWindow(title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, SDL_WINDOW_SHOWN);
-    if (!xiWin.window) {
+    gwindow = SDL_CreateWindow(title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, SDL_WINDOW_SHOWN);
+    if (!gwindow) {
         SDL_Log("Failed to create window: %s", SDL_GetError());
         SDL_Quit();
         return xiWin;
     }
 
-    xiWin.renderer = SDL_CreateRenderer(xiWin.window, -1, SDL_RENDERER_ACCELERATED);
-    if (!xiWin.renderer) {
+    grenderer = SDL_CreateRenderer(gwindow, -1, SDL_RENDERER_ACCELERATED);
+    if (!grenderer) {
         SDL_Log("Failed to create renderer: %s", SDL_GetError());
-        SDL_DestroyWindow(xiWin.window);
+        SDL_DestroyWindow(gwindow);
         SDL_Quit();
-        xiWin.window = NULL;
+        gwindow = NULL;
         return xiWin;
     }
 
@@ -155,11 +156,11 @@ void xiDestroyWindow(xiWindow *xiWin) {
     if (xiWin->defaultFont) {
         TTF_CloseFont(xiWin->defaultFont);
     }
-    if (xiWin->renderer) {
-        SDL_DestroyRenderer(xiWin->renderer);
+    if (grenderer) {
+        SDL_DestroyRenderer(grenderer);
     }
-    if (xiWin->window) {
-        SDL_DestroyWindow(xiWin->window);
+    if (gwindow) {
+        SDL_DestroyWindow(gwindow);
     }
     TTF_Quit();
     SDL_Quit();
@@ -169,27 +170,27 @@ void xiDestroyWindow(xiWindow *xiWin) {
 
 // Draw a rectangle
 void xiDrawRect(xiWindow *xiWin, int x, int y, int width, int height, Color color, ShapeType type) {
-    draw_rect(xiWin->renderer, x, y, width, height, color, type);
+    draw_rect(grenderer, x, y, width, height, color, type);
 }
 
 // Draw text
 void xiDrawText(xiWindow *xiWin, int x, int y, const char *text, Color color, int fontSize) {
-    draw_text(xiWin->renderer, "FreeMono.ttf", fontSize, x, y, text, color);
+    draw_text(grenderer, "FreeMono.ttf", fontSize, x, y, text, color);
 }
 
 // Draw a circle using midpoint algorithm
 void xiDrawCircle(xiWindow *xiWin, int x, int y, int radius, Color color, ShapeType type) {
-    draw_circle(xiWin->renderer, x, y, radius, color, type);
+    draw_circle(grenderer, x, y, radius, color, type);
 }
 
 // Draw a triangle
 void xiDrawTriangle(xiWindow *xiWin, int x1, int y1, int x2, int y2, int x3, int y3, Color color, ShapeType type) {
-    draw_triangle(xiWin->renderer, x1, y1, x2, y2, x3, y3, color, type);
+    draw_triangle(grenderer, x1, y1, x2, y2, x3, y3, color, type);
 }
 
 // Clear the screen with a specific color
 void xiClearScreen(xiWindow *xiWin, Color color) {
-    clear_screen(xiWin->renderer, color);
+    clear_screen(grenderer, color);
 }
 
 //============================= CONTAINER ===========================================
