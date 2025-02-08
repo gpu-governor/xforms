@@ -22,7 +22,10 @@ typedef enum { FILLED, OUTLINE } ShapeType;
 const Color COLOR_RED = {255, 0, 0, 255};
 const Color COLOR_GREEN = {0, 255, 0, 255};
 const Color COLOR_BLUE = {0, 0, 255, 255};
+const Color COLOR_WHITE ={255, 255, 255};
 
+const Color COLOR_YELLOW = { 255, 255, 0 };
+const Color COLOR_DARK_BLUE = { 0,0, 139 };
 /// ===============================
 // Container widget structure
 typedef struct {
@@ -30,13 +33,12 @@ typedef struct {
     const char *title;
     Color color;
     bool movable;
-    int typeId;
 } xiContainer;
 
 bool check_parent_type(void *parent) {
     if (parent == NULL) return false;
-    return ((xiContainer *)parent)->typeId == 00110;
-}
+    return true;
+   }
 void apply_offset(void *parent, int *x, int *y) {
     if (check_parent_type(parent)) {
         xiContainer *container = (xiContainer *)parent;
@@ -216,6 +218,9 @@ void xiClearScreen(xiWindow *xiWin, Color color) {
     clear_screen(grenderer, color);
 }
 
+//==================== WIDGETS ==================
+
+
 //============================= CONTAINER ===========================================
 
 // Create a new container instance
@@ -228,7 +233,6 @@ xiContainer createContainer(int x, int y, int width, int height, Color color, co
     container.color = color;
     container.title = title;
     container.movable = movable;
-    container.typeId = 00110; // so we can check if it is a container
     return container;
 }
 
