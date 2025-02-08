@@ -95,7 +95,8 @@ void render_text(Text *text) {
 int main() {
     xiWindow window = xiCreateWindow("UI Widgets", 800, 600);
 
-    Label label = create_label(50, 50, 200, 40, "Hello, Label!", COLOR_WHITE, (Color){0, 0, 0, 0}); // Transparent background
+    Label label = create_label(50, 50, 200, 40, "Hello, Label!", COLOR_WHITE, COLOR_RED); 
+   // (Color){0, 0, 0, 0}// Transparent background
     Button button = create_button(50, 120, 200, 50, "Click Me", COLOR_WHITE, COLOR_BLUE, COLOR_DARK_BLUE, COLOR_RED);
     Text text = create_text(50, 200, "This is just text.", COLOR_YELLOW);
 
