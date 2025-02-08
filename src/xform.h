@@ -28,7 +28,47 @@ const Color COLOR_DARK_BLUE = { 0,0, 139 };
 
 
 /// ===============================
+//----------------------------------------------
 
+
+typedef enum {
+    WIDGET_BUTTON,
+    WIDGET_LABEL,
+    WIDGET_TEXT,
+    WIDGET_SLIDER,
+    WIDGET_CONTAINER,
+    WIDGET_ENTRY
+} WidgetType;
+
+typedef struct {
+    WidgetType type;
+    void* widget;  // Pointer to the actual widget (Button, Label, or Text)
+} Widget;
+
+#define MAX_WIDGETS 100
+Widget widgets[MAX_WIDGETS];
+int widget_count = 0;
+
+
+void register_widget(WidgetType type, void* widget) {
+// this function is called internally when a new widgets is created
+/*
+When users call button(), label(), or text(), these will register their widgets internally:
+
+Button button(parameters) {
+    Button new_button = create_button(text, x, y, font_size, fg, bg, style);
+    register_widget(WIDGET_BUTTON, &new_button); <<<<<< registering
+    return new_button;
+}
+
+*/
+    if (widget_count < MAX_WIDGETS) {
+        widgets[widget_count].type = type;
+        widgets[widget_count].widget = widget;
+        widget_count++;
+    }
+}
+//================================================
 
 /// ============================ LOCAL FUNCTIONS ============================
 static void draw_rect(SDL_Renderer *renderer, int x, int y, int width, int height, Color color, ShapeType type) {
@@ -221,6 +261,9 @@ xiContainer createContainer(int x, int y, int width, int height, Color color, co
     container.color = color;
     container.title = title;
     container.movable = movable;
+    
+    register_widget(WIDGET_CONTAINER, &container);
+    	
     return container;
 }
 
@@ -335,6 +378,7 @@ typedef struct {
     int font_size;
     Color text_color;
     Color background_color;
+    xiContainer* parent;
 } TextEntry;
 
 // Initialize a single-line text entry box
@@ -350,7 +394,12 @@ TextEntry CreateTextEntry(int x, int y, int width, int height, int font_size, Co
     entry.active = false;
     entry.cursor_position = 0;
     entry.text_offset = 0;
+    entry.parent=NULL;
     memset(entry.text, 0, MAX_TEXT_LENGTH); // Initialize text with empty characters
+    
+    // registers widgets so sw_loop() can keep track of it, see render_widgets() for more details
+    	register_widget(WIDGET_ENTRY, &entry);
+    	
     return entry;
 }
 
@@ -433,6 +482,7 @@ typedef struct {
     const char *text;
     Color text_color;
     Color background_color; // Can be transparent
+    xiContainer* parent;
 } Label;
 
 // ---------------- Button Structure ----------------
@@ -445,6 +495,7 @@ typedef struct {
     Color click_color;
     bool hovered;
     bool clicked;
+    xiContainer* parent;
 } Button;
 
 // ---------------- Text Structure ----------------
@@ -453,11 +504,15 @@ typedef struct {
     const char *text;
     Color text_color;
     int font_size;
+    xiContainer* parent;
 } Text;
 
 // ---------------- Label Functions ----------------
 Label CreateLabel(int x, int y, int width, int height, const char *text, Color text_color, Color background_color) {
-    Label label = {x, y, width, height, text, text_color, background_color};
+    Label label = {x, y, width, height, text, text_color, background_color, NULL};
+    
+    register_widget(WIDGET_LABEL, &label);
+    	
     return label;
 }
 
@@ -470,7 +525,8 @@ void render_label(Label *label) {
 
 // ---------------- Button Functions ----------------
 Button CreateButton(int x, int y, int width, int height, const char *text, Color text_color, Color background_color, Color hover_color, Color click_color) {
-    Button button = {x, y, width, height, text, text_color, background_color, hover_color, click_color, false, false};
+    Button button = {x, y, width, height, text, text_color, background_color, hover_color, click_color, false, false, NULL};
+    register_widget(WIDGET_TEXT, &button);
     return button;
 }
 
@@ -503,8 +559,11 @@ void update_button(Button *button, SDL_Event *event) {
 }
 
 // ---------------- Text Functions ----------------
-Text create_text(int x, int y, const char *text, Color text_color, int font_size) {
-    Text txt = {x, y, text, text_color, font_size};
+Text CreateText(int x, int y, const char *text, Color text_color, int font_size) {
+    Text txt = {x, y, text, text_color, font_size,NULL};
+    
+    register_widget(WIDGET_TEXT, &txt);
+    	
     return txt;
 }
 
@@ -518,11 +577,14 @@ typedef struct {
     int min_value, max_value;
     int value;
     bool dragging;
+    xiContainer* parent;
 } Slider;
 
 // Create a slider
 Slider CreateSlider(int x, int y, int width, int height, int min_value, int max_value, int start_value) {
-    Slider slider = {x, y, width, height, min_value, max_value, start_value, false};
+    Slider slider = {x, y, width, height, min_value, max_value, start_value, false,NULL};
+    register_widget(WIDGET_SLIDER, &slider);
+    	
     return slider;
 }
 
@@ -574,3 +636,74 @@ void update_slider(Slider *slider, SDL_Event *event) {
         slider->dragging = false;
     }
 }
+
+
+//=================== Main Loop ==================
+//=====================RENDER ALL WIDGETS=============================
+void render_widgets() {
+/*
+ Key Steps for render_widgets():
+ 
+    *  Widget Registration: Whenever the user calls button(), label(), or text(), these widgets need to be registered in an internal data structure like a list or array.
+    * Widget Rendering: In render_widgets(), the system will loop through all registered widgets and call the appropriate rendering function for each one, like render_button(), render_label(), or render_text().
+    * Widget Type Checking: Each widget will have a type (e.g., button, label, text), and based on that type, the corresponding render function will be called.
+*/
+    for (int i = 0; i < widget_count; ++i) {
+        switch (widgets[i].type) {
+            case WIDGET_BUTTON:
+                sw_render_button((CREATE*)widgets[i].widget);
+                break;
+            case WIDGET_LABEL:
+                sw_render_label((CREATE*)widgets[i].widget);
+                break;
+            case WIDGET_TEXT:
+                sw_render_text((CREATE*)widgets[i].widget);
+                break;
+         case WIDGET_SLIDER:
+             
+                sw_render_slider((CREATE*)widgets[i].widget);
+                break; 
+         case WIDGET_ENTRY:
+             	sw_render_text_entry((CREATE*)widgets[i].widget);
+                break;
+            // Add cases for other widget types here as you implement them
+            default:
+                break;
+        }
+    }
+}
+
+//=====================================gui loop=================================================
+ void EventLoop() {
+     while (active) {
+         SDL_Event event;
+         while (SDL_PollEvent(&event)) {
+             switch (event.type) {
+                 case SDL_QUIT:
+                     sw_active = false;  // User closed the window
+                     break;
+                 
+                     break;
+                 case SDL_WINDOWEVENT:
+                     if (event.window.event == SDL_WINDOWEVENT_RESIZED) {
+                         updateWindowSize();  // Resize event triggers window size update
+                     }
+                     break;
+                 default:
+                     break;
+             }
+             //buttons
+             sw_render_all_button_states(&event);
+             //drop down
+             sw_render_all_drop_down_states(&event);
+			//slider
+			sw_render_all_slider_states(&event);
+            //entry
+            sw_render_all_entry_states(&event);
+        
+         }
+          sw_background(GRAY);
+         sw_render_widgets();  // Render all widgets (handled by library)
+         sw_present();         // Present the rendered output
+     }
+ }

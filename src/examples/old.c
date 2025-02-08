@@ -3,6 +3,8 @@
 int main() {
     xiWindow xiWin = xiCreateWindow("xi SDL Window", 800, 600);
 
+    if (!xiWin.window || !xiWin.renderer) return 1;
+
     bool running = true;
     SDL_Event event;
 
