@@ -32,6 +32,7 @@ int main(int argc, char *argv[]) {
         xiClearScreen(&xiWin, COLOR_BLUE);
 
         // Draw the containers
+        xiDrawRect(&containerWithTitle, 50, 50, 200, 100, COLOR_GREEN, FILLED);
         drawContainer(&xiWin, &containerWithTitle);
         drawContainer(&xiWin, &containerWithoutTitle);
 

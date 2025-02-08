@@ -23,6 +23,28 @@ const Color COLOR_RED = {255, 0, 0, 255};
 const Color COLOR_GREEN = {0, 255, 0, 255};
 const Color COLOR_BLUE = {0, 0, 255, 255};
 
+/// ===============================
+// Container widget structure
+typedef struct {
+    int x, y, width, height;
+    const char *title;
+    Color color;
+    bool movable;
+    int typeId;
+} xiContainer;
+
+bool check_parent_type(void *parent) {
+    if (parent == NULL) return false;
+    return ((xiContainer *)parent)->typeId == 00110;
+}
+void apply_offset(void *parent, int *x, int *y) {
+    if (check_parent_type(parent)) {
+        xiContainer *container = (xiContainer *)parent;
+        *x += container->x;
+        *y += container->y;
+    }
+}
+
 /// ============================ LOCAL FUNCTIONS ============================
 static void draw_rect(SDL_Renderer *renderer, int x, int y, int width, int height, Color color, ShapeType type) {
     SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
@@ -169,22 +191,23 @@ void xiDestroyWindow(xiWindow *xiWin) {
 /// ============================ DRAW FUNCTIONS ============================
 
 // Draw a rectangle
-void xiDrawRect(xiWindow *xiWin, int x, int y, int width, int height, Color color, ShapeType type) {
+void xiDrawRect(void *parent, int x, int y, int width, int height, Color color, ShapeType type) {
+    apply_offset(parent, &x, &y);
     draw_rect(grenderer, x, y, width, height, color, type);
 }
 
 // Draw text
-void xiDrawText(xiWindow *xiWin, int x, int y, const char *text, Color color, int fontSize) {
+void xiDrawText(void *parent, int x, int y, const char *text, Color color, int fontSize) {
     draw_text(grenderer, "FreeMono.ttf", fontSize, x, y, text, color);
 }
 
 // Draw a circle using midpoint algorithm
-void xiDrawCircle(xiWindow *xiWin, int x, int y, int radius, Color color, ShapeType type) {
+void xiDrawCircle(void *parent, int x, int y, int radius, Color color, ShapeType type) {
     draw_circle(grenderer, x, y, radius, color, type);
 }
 
 // Draw a triangle
-void xiDrawTriangle(xiWindow *xiWin, int x1, int y1, int x2, int y2, int x3, int y3, Color color, ShapeType type) {
+void xiDrawTriangle(void *parent, int x1, int y1, int x2, int y2, int x3, int y3, Color color, ShapeType type) {
     draw_triangle(grenderer, x1, y1, x2, y2, x3, y3, color, type);
 }
 
@@ -194,13 +217,6 @@ void xiClearScreen(xiWindow *xiWin, Color color) {
 }
 
 //============================= CONTAINER ===========================================
-// Container widget structure
-typedef struct {
-    int x, y, width, height;
-    const char *title;
-    Color color;
-    bool movable;
-} xiContainer;
 
 // Create a new container instance
 xiContainer createContainer(int x, int y, int width, int height, Color color, const char *title, bool movable) {
@@ -212,6 +228,7 @@ xiContainer createContainer(int x, int y, int width, int height, Color color, co
     container.color = color;
     container.title = title;
     container.movable = movable;
+    container.typeId = 00110; // so we can check if it is a container
     return container;
 }
 
