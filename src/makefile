@@ -1,5 +1,5 @@
 CC = gcc
-SRC = con.c
+SRC = main.c
 EXE = main
 LIBS = -lSDL2 -lSDL2_ttf
 

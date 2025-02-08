@@ -2,18 +2,19 @@
 #include <SDL2/SDL_ttf.h>
 #include <stdbool.h>
 
+/// ============================ COLOR STRUCT ============================
+typedef struct {
+    Uint8 r, g, b, a;
+} Color;
 /// ============================ WINDOW STRUCT ============================
 typedef struct {
     TTF_Font *defaultFont;
+    Color background_color;
 } xiWindow;
 
 SDL_Window *gwindow;
 SDL_Renderer *grenderer;
 
-/// ============================ COLOR STRUCT ============================
-typedef struct {
-    Uint8 r, g, b, a;
-} Color;
 
 /// ============================ ENUMS ============================
 typedef enum { FILLED, OUTLINE } ShapeType;
@@ -25,7 +26,8 @@ const Color COLOR_BLUE = {0, 0, 255, 255};
 const Color COLOR_WHITE ={255, 255, 255};
 const Color COLOR_YELLOW = { 255, 255, 0 };
 const Color COLOR_DARK_BLUE = { 0,0, 139 };
-
+const Color COLOR_GRAY = { 128,128, 128 };
+const Color COLOR_BLACK = {0,0,0 };
 
 /// ===============================
 //----------------------------------------------
@@ -165,7 +167,7 @@ static void clear_screen(SDL_Renderer *renderer, Color color) {
 /// ============================ WINDOW FUNCTIONS ============================
 // Create and initialize the SDL window and renderer
 xiWindow xiCreateWindow(const char *title, int width, int height) {
-    xiWindow xiWin = {NULL, NULL, NULL};
+    xiWindow xiWin = {NULL, COLOR_GRAY};
 
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
         SDL_Log("Unable to initialize SDL: %s", SDL_GetError());
@@ -237,7 +239,7 @@ void xiDrawTriangle(void *parent, int x1, int y1, int x2, int y2, int x3, int y3
 }
 
 // Clear the screen with a specific color
-void xiClearScreen(xiWindow *xiWin, Color color) {
+void xiClearScreen(Color color) {
     clear_screen(grenderer, color);
 }
 
@@ -650,21 +652,24 @@ void render_widgets() {
 */
     for (int i = 0; i < widget_count; ++i) {
         switch (widgets[i].type) {
+            case WIDGET_CONTAINER:
+                sw_render_button((xiContainer*)widgets[i].widget);
+                break;     
             case WIDGET_BUTTON:
-                sw_render_button((CREATE*)widgets[i].widget);
+                sw_render_button((Button*)widgets[i].widget);
                 break;
             case WIDGET_LABEL:
-                sw_render_label((CREATE*)widgets[i].widget);
+                sw_render_label((Label*)widgets[i].widget);
                 break;
             case WIDGET_TEXT:
-                sw_render_text((CREATE*)widgets[i].widget);
+                sw_render_text((Text*)widgets[i].widget);
                 break;
          case WIDGET_SLIDER:
              
-                sw_render_slider((CREATE*)widgets[i].widget);
+                sw_render_slider((Slider*)widgets[i].widget);
                 break; 
          case WIDGET_ENTRY:
-             	sw_render_text_entry((CREATE*)widgets[i].widget);
+             	sw_render_text_entry((TextEntry*)widgets[i].widget);
                 break;
             // Add cases for other widget types here as you implement them
             default:
@@ -674,19 +679,20 @@ void render_widgets() {
 }
 
 //=====================================gui loop=================================================
- void EventLoop() {
-     while (active) {
+bool program_active = true; 
+void EventLoop() {
+     while (program_active) {
          SDL_Event event;
          while (SDL_PollEvent(&event)) {
              switch (event.type) {
                  case SDL_QUIT:
-                     sw_active = false;  // User closed the window
+                    program_active = false;  // User closed the window
                      break;
                  
                      break;
                  case SDL_WINDOWEVENT:
                      if (event.window.event == SDL_WINDOWEVENT_RESIZED) {
-                         updateWindowSize();  // Resize event triggers window size update
+                         // Resize event triggers window size update
                      }
                      break;
                  default:
@@ -702,7 +708,8 @@ void render_widgets() {
             sw_render_all_entry_states(&event);
         
          }
-          sw_background(GRAY);
+          //clear_screen(xiWindow.background_color);
+          xiClearScreen(COLOR_GRAY);
          sw_render_widgets();  // Render all widgets (handled by library)
          sw_present();         // Present the rendered output
      }
