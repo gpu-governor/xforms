@@ -82,8 +82,12 @@ static void draw_rect(SDL_Renderer *renderer, int x, int y, int width, int heigh
         SDL_RenderDrawRect(renderer, &rect);
     }
 }
-
 static void draw_text(SDL_Renderer *renderer, const char *fontPath, int fontSize, int x, int y, const char *text, Color color) {
+    if (!text) {
+        SDL_Log("Failed to create text surface: Text is NULL");
+        return;
+    }
+
     TTF_Font *font = TTF_OpenFont(fontPath, fontSize);
     if (!font) {
         SDL_Log("Failed to load font: %s", TTF_GetError());
@@ -270,14 +274,14 @@ xiContainer createContainer(int x, int y, int width, int height, Color color, co
 }
 
 // Render the container on the screen
-void drawContainer(xiWindow *xiWin, xiContainer *container) {
+void render_container(xiContainer *container) {
     int x = container->x;
     int y = container->y;
     int width = container->width;
     int height = container->height;
 
     // Draw the main container rectangle (filled)
-    xiDrawRect(xiWin, x, y, width, height, container->color, FILLED);
+    xiDrawRect(NULL, x, y, width, height, container->color, FILLED);
 
     // Handle title bar and title if a valid title is provided
     if (container->title && strlen(container->title) > 0) {
@@ -285,12 +289,12 @@ void drawContainer(xiWindow *xiWin, xiContainer *container) {
         Color titleBarColor = {200, 200, 200, 255};
 
         // Draw title bar
-        xiDrawRect(xiWin, x, y, width, titleBarHeight, titleBarColor, FILLED);
+        xiDrawRect(NULL, x, y, width, titleBarHeight, titleBarColor, FILLED);
 
         // Draw title text centered vertically within the title bar
         int textX = x + 10;
         int textY = y + (titleBarHeight / 4);  // Simple vertical alignment
-        xiDrawText(xiWin, textX, textY, container->title, COLOR_BLUE, 16);
+        xiDrawText(NULL, textX, textY, container->title, COLOR_BLUE, 16);
 
         // Adjust the container rectangle position if title bar exists
         y += titleBarHeight;
@@ -298,7 +302,7 @@ void drawContainer(xiWindow *xiWin, xiContainer *container) {
     }
 
     // Redraw container outline after adjusting for title bar
-    xiDrawRect(xiWin, x, y, width, height, container->color, OUTLINE);
+    xiDrawRect(NULL, x, y, width, height, container->color, OUTLINE);
 }
 
 // Handle container movement if movable is true
@@ -570,7 +574,7 @@ Text CreateText(int x, int y, const char *text, Color text_color, int font_size)
 }
 
 void render_text(Text *text) {
-    xiDrawText(NULL, text->x, text->y, text->text, text->text_color, text->font_size);
+    draw_text(grenderer, "FreeMono.ttf", text->font_size,text->x, text->y, text->text, text->text_color);
 }
 
 // ----------- slider -----------------
@@ -591,7 +595,7 @@ Slider CreateSlider(int x, int y, int width, int height, int min_value, int max_
 }
 
 // Render the slider with a centered value
-void render_slider(SDL_Renderer *renderer, Slider *slider) {
+void render_slider(Slider *slider) {
     // Draw the bar (track)
     xiDrawRect(NULL, slider->x, slider->y, slider->width, slider->height, COLOR_WHITE, FILLED);
 
@@ -609,7 +613,7 @@ void render_slider(SDL_Renderer *renderer, Slider *slider) {
     int text_x = handle_x + (slider->height / 4);  // Center inside the thumb
     int text_y = slider->y + (slider->height / 4);
 
-    draw_text(renderer, "FreeMono.ttf", slider->height / 2, text_x, text_y, value_text, COLOR_WHITE);
+    draw_text(grenderer, "FreeMono.ttf", slider->height / 2, text_x, text_y, value_text, COLOR_WHITE);
 }
 
 // Update the slider based on mouse input
@@ -653,23 +657,22 @@ void render_widgets() {
     for (int i = 0; i < widget_count; ++i) {
         switch (widgets[i].type) {
             case WIDGET_CONTAINER:
-                sw_render_button((xiContainer*)widgets[i].widget);
+                render_container((xiContainer*)widgets[i].widget);
                 break;     
             case WIDGET_BUTTON:
-                sw_render_button((Button*)widgets[i].widget);
+                render_button((Button*)widgets[i].widget);
                 break;
             case WIDGET_LABEL:
-                sw_render_label((Label*)widgets[i].widget);
+                render_label((Label*)widgets[i].widget);
                 break;
             case WIDGET_TEXT:
-                sw_render_text((Text*)widgets[i].widget);
+                render_text((Text*)widgets[i].widget);
                 break;
          case WIDGET_SLIDER:
-             
-                sw_render_slider((Slider*)widgets[i].widget);
+                render_slider((Slider*)widgets[i].widget);
                 break; 
          case WIDGET_ENTRY:
-             	sw_render_text_entry((TextEntry*)widgets[i].widget);
+             	render_text_entry((TextEntry*)widgets[i].widget);
                 break;
             // Add cases for other widget types here as you implement them
             default:
@@ -699,18 +702,18 @@ void EventLoop() {
                      break;
              }
              //buttons
-             sw_render_all_button_states(&event);
+           //  sw_render_all_button_states(&event);
              //drop down
-             sw_render_all_drop_down_states(&event);
+           //  sw_render_all_drop_down_states(&event);
 			//slider
-			sw_render_all_slider_states(&event);
+			//sw_render_all_slider_states(&event);
             //entry
-            sw_render_all_entry_states(&event);
+        //   sw_render_all_entry_states(&event);
         
          }
           //clear_screen(xiWindow.background_color);
           xiClearScreen(COLOR_GRAY);
-         sw_render_widgets();  // Render all widgets (handled by library)
-         sw_present();         // Present the rendered output
+         render_widgets();  // Render all widgets (handled by library)
+         SDL_RenderPresent(grenderer);       // Present the rendered output
      }
  }
