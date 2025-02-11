@@ -1,7 +1,9 @@
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_ttf.h>
-#include <stdbool.h>
+/// LIBS INCLUDED:
+#include <SDL2/SDL.h> /// SDL2
+#include <SDL2/SDL_ttf.h> ///SDL TTF
+#include <stdbool.h> /// STDBOOL
 
+static const char *xi_fontpath = "FreeMono.ttf";
 /// ============================ COLOR STRUCT ============================
 typedef struct {
     Uint8 r, g, b, a;
@@ -10,7 +12,7 @@ typedef struct {
 typedef struct {
     TTF_Font *defaultFont;
     Color background_color;
-} xiWindow;
+} xi_Window;
 
 SDL_Window *gwindow;
 SDL_Renderer *grenderer;
@@ -23,15 +25,13 @@ typedef enum { FILLED, OUTLINE } ShapeType;
 const Color COLOR_RED = {255, 0, 0, 255};
 const Color COLOR_GREEN = {0, 255, 0, 255};
 const Color COLOR_BLUE = {0, 0, 255, 255};
-const Color COLOR_WHITE ={255, 255, 255};
-const Color COLOR_YELLOW = { 255, 255, 0 };
-const Color COLOR_DARK_BLUE = { 0,0, 139 };
-const Color COLOR_GRAY = { 128,128, 128 };
-const Color COLOR_BLACK = {0,0,0 };
+const Color COLOR_WHITE ={255, 255, 255,255};
+const Color COLOR_YELLOW = { 255, 255, 0,255 };
+const Color COLOR_DARK_BLUE = { 0,0, 139,255 };
+const Color COLOR_GRAY = { 128,128, 128,255 };
+const Color COLOR_BLACK = {0,0,0,255 };
 
-/// ===============================
-//----------------------------------------------
-
+/// =============================== REGISTERING WIDGETS ===================================
 
 typedef enum {
     WIDGET_BUTTON,
@@ -70,10 +70,9 @@ Button button(parameters) {
         widget_count++;
     }
 }
-//================================================
 
-/// ============================ LOCAL FUNCTIONS ============================
-static void draw_rect(SDL_Renderer *renderer, int x, int y, int width, int height, Color color, ShapeType type) {
+/// ============================ DRAW FUNCTIONS ============================
+static void xi_DrawRect(SDL_Renderer *renderer, int x, int y, int width, int height, Color color, ShapeType type) {
     SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
     SDL_Rect rect = {x, y, width, height};
     if (type == FILLED) {
@@ -82,15 +81,31 @@ static void draw_rect(SDL_Renderer *renderer, int x, int y, int width, int heigh
         SDL_RenderDrawRect(renderer, &rect);
     }
 }
-static void draw_text(SDL_Renderer *renderer, const char *fontPath, int fontSize, int x, int y, const char *text, Color color) {
-    if (!text) {
-        SDL_Log("Failed to create text surface: Text is NULL");
+
+void xi_DrawText(SDL_Renderer *renderer, const char *text, int x, int y, Color color, int fontSize) {
+    if (!renderer) {
+        SDL_Log("Renderer is NULL");
         return;
     }
 
-    TTF_Font *font = TTF_OpenFont(fontPath, fontSize);
+    if (!xi_fontpath || xi_fontpath[0] == '\0') {
+        SDL_Log("Font path is not set");
+        return;
+    }
+
+    if (fontSize <= 0) {
+        SDL_Log("Invalid font size: %d", fontSize);
+        return;
+    }
+
+    if (!text) {
+        SDL_Log("Text is NULL");
+        return;
+    }
+
+    TTF_Font *font = TTF_OpenFont(xi_fontpath, fontSize);
     if (!font) {
-        SDL_Log("Failed to load font: %s", TTF_GetError());
+        SDL_Log("Failed to load font '%s': %s", xi_fontpath, TTF_GetError());
         return;
     }
 
@@ -111,14 +126,17 @@ static void draw_text(SDL_Renderer *renderer, const char *fontPath, int fontSize
     }
 
     SDL_Rect destRect = {x, y, textSurface->w, textSurface->h};
-    SDL_RenderCopy(renderer, textTexture, NULL, &destRect);
+    if (SDL_RenderCopy(renderer, textTexture, NULL, &destRect) != 0) {
+        SDL_Log("Failed to render text: %s", SDL_GetError());
+    }
 
     SDL_FreeSurface(textSurface);
     SDL_DestroyTexture(textTexture);
     TTF_CloseFont(font);
 }
 
-static void draw_circle(SDL_Renderer *renderer, int x, int y, int radius, Color color, ShapeType type) {
+
+static void xi_DrawCircle(SDL_Renderer *renderer, int x, int y, int radius, Color color, ShapeType type) {
     SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
     int offsetX = 0, offsetY = radius;
     int d = 1 - radius;
@@ -150,7 +168,7 @@ static void draw_circle(SDL_Renderer *renderer, int x, int y, int radius, Color 
     }
 }
 
-static void draw_triangle(SDL_Renderer *renderer, int x1, int y1, int x2, int y2, int x3, int y3, Color color, ShapeType type) {
+static void xi_DrawTriangle(SDL_Renderer *renderer, int x1, int y1, int x2, int y2, int x3, int y3, Color color, ShapeType type) {
     SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
     if (type == FILLED) {
         SDL_RenderDrawLine(renderer, x1, y1, x2, y2);
@@ -163,15 +181,15 @@ static void draw_triangle(SDL_Renderer *renderer, int x1, int y1, int x2, int y2
     }
 }
 
-static void clear_screen(SDL_Renderer *renderer, Color color) {
+static void xi_ClearScreen(SDL_Renderer *renderer, Color color) {
     SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
     SDL_RenderClear(renderer);
 }
 
 /// ============================ WINDOW FUNCTIONS ============================
 // Create and initialize the SDL window and renderer
-xiWindow xiCreateWindow(const char *title, int width, int height) {
-    xiWindow xiWin = {NULL, COLOR_GRAY};
+xi_Window xiCreateWindow(const char *title, int width, int height) {
+    xi_Window xiWin = {NULL, COLOR_GRAY};
 
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
         SDL_Log("Unable to initialize SDL: %s", SDL_GetError());
@@ -205,7 +223,7 @@ xiWindow xiCreateWindow(const char *title, int width, int height) {
 }
 
 // Destroy the SDL window and renderer
-void xiDestroyWindow(xiWindow *xiWin) {
+void xiDestroyWindow(xi_Window *xiWin) {
     if (xiWin->defaultFont) {
         TTF_CloseFont(xiWin->defaultFont);
     }
@@ -219,34 +237,6 @@ void xiDestroyWindow(xiWindow *xiWin) {
     SDL_Quit();
 }
 
-/// ============================ DRAW FUNCTIONS ============================
-
-// Draw a rectangle
-void xiDrawRect(void *parent, int x, int y, int width, int height, Color color, ShapeType type) {
-   // apply_offset(parent, &x, &y);
-    draw_rect(grenderer, x, y, width, height, color, type);
-}
-
-// Draw text
-void xiDrawText(void *parent, int x, int y, const char *text, Color color, int fontSize) {
-    draw_text(grenderer, "FreeMono.ttf", fontSize, x, y, text, color);
-}
-
-// Draw a circle using midpoint algorithm
-void xiDrawCircle(void *parent, int x, int y, int radius, Color color, ShapeType type) {
-    draw_circle(grenderer, x, y, radius, color, type);
-}
-
-// Draw a triangle
-void xiDrawTriangle(void *parent, int x1, int y1, int x2, int y2, int x3, int y3, Color color, ShapeType type) {
-    draw_triangle(grenderer, x1, y1, x2, y2, x3, y3, color, type);
-}
-
-// Clear the screen with a specific color
-void xiClearScreen(Color color) {
-    clear_screen(grenderer, color);
-}
-
 
 //============================= CONTAINER ===========================================
 // Container widget structure
@@ -255,11 +245,11 @@ typedef struct {
     const char *title;
     Color color;
     bool movable;
-} xiContainer;
+} xi_Container;
 
 // Create a new container instance
-xiContainer createContainer(int x, int y, int width, int height, Color color, const char *title, bool movable) {
-    xiContainer container;
+xi_Container createContainer(int x, int y, int width, int height, Color color, const char *title, bool movable) {
+    xi_Container container;
     container.x = x;
     container.y = y;
     container.width = width;
@@ -274,14 +264,14 @@ xiContainer createContainer(int x, int y, int width, int height, Color color, co
 }
 
 // Render the container on the screen
-void render_container(xiContainer *container) {
+void render_container(xi_Container *container) {
     int x = container->x;
     int y = container->y;
     int width = container->width;
     int height = container->height;
 
     // Draw the main container rectangle (filled)
-    xiDrawRect(NULL, x, y, width, height, container->color, FILLED);
+    xi_DrawRect(grenderer, x, y, width, height, container->color, FILLED);
 
     // Handle title bar and title if a valid title is provided
     if (container->title && strlen(container->title) > 0) {
@@ -289,12 +279,12 @@ void render_container(xiContainer *container) {
         Color titleBarColor = {200, 200, 200, 255};
 
         // Draw title bar
-        xiDrawRect(NULL, x, y, width, titleBarHeight, titleBarColor, FILLED);
+        xi_DrawRect(grenderer, x, y, width, titleBarHeight, titleBarColor, FILLED);
 
         // Draw title text centered vertically within the title bar
         int textX = x + 10;
         int textY = y + (titleBarHeight / 4);  // Simple vertical alignment
-        xiDrawText(NULL, textX, textY, container->title, COLOR_BLUE, 16);
+        xi_DrawText(grenderer, container->title, textX, textY, COLOR_BLUE, 16);
 
         // Adjust the container rectangle position if title bar exists
         y += titleBarHeight;
@@ -302,11 +292,11 @@ void render_container(xiContainer *container) {
     }
 
     // Redraw container outline after adjusting for title bar
-    xiDrawRect(NULL, x, y, width, height, container->color, OUTLINE);
+    xi_DrawRect(grenderer, x, y, width, height, container->color, OUTLINE);
 }
 
 // Handle container movement if movable is true
-void handleContainerMovement(xiContainer *container, SDL_Event *event) {
+void handleContainerMovement(xi_Container *container, SDL_Event *event) {
     static bool dragging = false;
     static int offsetX = 0, offsetY = 0;
 
@@ -333,45 +323,6 @@ void handleContainerMovement(xiContainer *container, SDL_Event *event) {
 
 //==================== WIDGETS ==================
 
-///--------------- Rect ------
-typedef struct {
-    int x;
-    int y;
-    int width;
-    int height;
-    Color color;
-    ShapeType type;
-    xiContainer* parent;
-} Rect;
-
-Rect CreateRectangle(int x, int y, int width, int height, Color color, ShapeType type) {
-    Rect rect;
-    rect.x = x;
-    rect.y = y;
-    rect.width = width;
-    rect.height = height;
-    rect.color = color;
-    rect.type = type;
-    rect.parent = NULL; // Initialize parent to NULL
-    return rect;
-}
-
-// Draw a rectangle
-void render_rect(Rect rect) {
-    int x, y;
-
-    if (rect.parent) { // Check if rect is inside a container
-        x = rect.parent->x + rect.x; 
-        y = rect.parent->y + rect.y; 
-    } else {
-        x = rect.x;
-        y = rect.y;
-    }
-
-    draw_rect(grenderer, x, y, rect.width, rect.height, rect.color, rect.type);
-}
-
-//-------------------
 // --------------------------- Text Entry Struct ---------------------------
 
 #define MAX_TEXT_LENGTH 256
@@ -384,12 +335,12 @@ typedef struct {
     int font_size;
     Color text_color;
     Color background_color;
-    xiContainer* parent;
+    xi_Container* parent;
 } TextEntry;
 
 // Initialize a single-line text entry box
 TextEntry CreateTextEntry(int x, int y, int width, int height, int font_size, Color text_color, Color background_color) {
-    TextEntry entry = {0};
+    TextEntry entry;
     entry.x = x;
     entry.y = y;
     entry.width = width;
@@ -412,10 +363,10 @@ TextEntry CreateTextEntry(int x, int y, int width, int height, int font_size, Co
 // Render the text entry box with scrolling support
 void render_text_entry(TextEntry *entry) {
     // Draw background
-    xiDrawRect(NULL, entry->x, entry->y, entry->width, entry->height, entry->background_color, FILLED);
+    xi_DrawRect(grenderer, entry->x, entry->y, entry->width, entry->height, entry->background_color, FILLED);
 
     // Draw border
-    xiDrawRect(NULL, entry->x, entry->y, entry->width, entry->height, COLOR_BLUE, OUTLINE);
+    xi_DrawRect(grenderer, entry->x, entry->y, entry->width, entry->height, COLOR_BLUE, OUTLINE);
 
     // Determine max visible characters (adjust for padding)
     int max_visible_chars = (entry->width - 10) / 10;  // 10px padding on the left side
@@ -434,12 +385,12 @@ void render_text_entry(TextEntry *entry) {
     visible_text[max_visible_chars] = '\0';
 
     // Draw only the visible portion of text
-    xiDrawText(NULL, entry->x + 5, entry->y + 5, visible_text, entry->text_color, entry->font_size);
+    xi_DrawText(grenderer,  visible_text, entry->x + 5, entry->y + 5, entry->text_color, entry->font_size);
 
     // Draw cursor
     if (entry->active) {
         int cursor_x = entry->x + 5 + ((entry->cursor_position - entry->text_offset) * 10);
-        xiDrawRect(NULL, cursor_x, entry->y + 5, 2, entry->font_size, entry->text_color, FILLED);
+        xi_DrawRect(grenderer, cursor_x, entry->y + 5, 2, entry->font_size, entry->text_color, FILLED);
     }
 }
 
@@ -488,7 +439,7 @@ typedef struct {
     const char *text;
     Color text_color;
     Color background_color; // Can be transparent
-    xiContainer* parent;
+    xi_Container* parent;
 } Label;
 
 // ---------------- Button Structure ----------------
@@ -501,7 +452,7 @@ typedef struct {
     Color click_color;
     bool hovered;
     bool clicked;
-    xiContainer* parent;
+    xi_Container* parent;
 } Button;
 
 // ---------------- Text Structure ----------------
@@ -510,7 +461,7 @@ typedef struct {
     const char *text;
     Color text_color;
     int font_size;
-    xiContainer* parent;
+    xi_Container* parent;
 } Text;
 
 // ---------------- Label Functions ----------------
@@ -524,9 +475,9 @@ Label CreateLabel(int x, int y, int width, int height, const char *text, Color t
 
 void render_label(Label *label) {
     if (label->background_color.a != 0) {  // If not transparent
-        xiDrawRect(NULL, label->x, label->y, label->width, label->height, label->background_color, FILLED);
+        xi_DrawRect(grenderer, label->x, label->y, label->width, label->height, label->background_color, FILLED);
     }
-    xiDrawText(NULL, label->x + 5, label->y + 5, label->text, label->text_color, 16);
+    xi_DrawText(grenderer, label->text, label->x + 5, label->y + 5, label->text_color, 16);
 }
 
 // ---------------- Button Functions ----------------
@@ -544,8 +495,8 @@ void render_button(Button *button) {
         current_color = button->hover_color;
     }
 
-    xiDrawRect(NULL, button->x, button->y, button->width, button->height, current_color, FILLED);
-    xiDrawText(NULL, button->x + 10, button->y + 10, button->text, button->text_color, 16);
+    xi_DrawRect(grenderer, button->x, button->y, button->width, button->height, current_color, FILLED);
+    xi_DrawText(grenderer,  button->text,button->x + 10, button->y + 10, button->text_color, 16);
 }
 
 void update_button(Button *button, SDL_Event *event) {
@@ -565,7 +516,7 @@ void update_button(Button *button, SDL_Event *event) {
 }
 
 // ---------------- Text Functions ----------------
-Text CreateText(int x, int y, const char *text, Color text_color, int font_size) {
+Text CreateText( const char *text,int x, int y, Color text_color, int font_size) {
     Text txt = {x, y, text, text_color, font_size,NULL};
     
     register_widget(WIDGET_TEXT, &txt);
@@ -574,7 +525,7 @@ Text CreateText(int x, int y, const char *text, Color text_color, int font_size)
 }
 
 void render_text(Text *text) {
-    draw_text(grenderer, "FreeMono.ttf", text->font_size,text->x, text->y, text->text, text->text_color);
+    xi_DrawText(grenderer, text->text,text->x, text->y, text->text_color,text->font_size);
 }
 
 // ----------- slider -----------------
@@ -583,7 +534,7 @@ typedef struct {
     int min_value, max_value;
     int value;
     bool dragging;
-    xiContainer* parent;
+    xi_Container* parent;
 } Slider;
 
 // Create a slider
@@ -597,14 +548,14 @@ Slider CreateSlider(int x, int y, int width, int height, int min_value, int max_
 // Render the slider with a centered value
 void render_slider(Slider *slider) {
     // Draw the bar (track)
-    xiDrawRect(NULL, slider->x, slider->y, slider->width, slider->height, COLOR_WHITE, FILLED);
+    xi_DrawRect(grenderer, slider->x, slider->y, slider->width, slider->height, COLOR_WHITE, FILLED);
 
     // Calculate the thumb (handle) position
     float percentage = (float)(slider->value - slider->min_value) / (slider->max_value - slider->min_value);
     int handle_x = slider->x + (int)(percentage * (slider->width - slider->height)); // Keep thumb inside the track
 
     // Draw the thumb (handle) inside the bar
-    xiDrawRect(NULL, handle_x, slider->y, slider->height, slider->height, COLOR_BLUE, FILLED);
+    xi_DrawRect(grenderer, handle_x, slider->y, slider->height, slider->height, COLOR_BLUE, FILLED);
 
     // Render the value inside the thumb
     char value_text[16];
@@ -613,7 +564,7 @@ void render_slider(Slider *slider) {
     int text_x = handle_x + (slider->height / 4);  // Center inside the thumb
     int text_y = slider->y + (slider->height / 4);
 
-    draw_text(grenderer, "FreeMono.ttf", slider->height / 2, text_x, text_y, value_text, COLOR_WHITE);
+    xi_DrawText(grenderer, value_text, text_x, text_y,  COLOR_WHITE,slider->height / 2);
 }
 
 // Update the slider based on mouse input
@@ -657,7 +608,7 @@ void render_widgets() {
     for (int i = 0; i < widget_count; ++i) {
         switch (widgets[i].type) {
             case WIDGET_CONTAINER:
-                render_container((xiContainer*)widgets[i].widget);
+                render_container((xi_Container*)widgets[i].widget);
                 break;     
             case WIDGET_BUTTON:
                 render_button((Button*)widgets[i].widget);
@@ -712,7 +663,7 @@ void EventLoop() {
         
          }
           //clear_screen(xiWindow.background_color);
-          xiClearScreen(COLOR_GRAY);
+          xi_ClearScreen(grenderer, COLOR_GRAY);
          render_widgets();  // Render all widgets (handled by library)
          SDL_RenderPresent(grenderer);       // Present the rendered output
      }
