@@ -525,7 +525,16 @@ Text CreateText( const char *text,int x, int y, Color text_color, int font_size)
 }
 
 void render_text(Text *text) {
-    xi_DrawText(grenderer, text->text,text->x, text->y, text->text_color,text->font_size);
+    int x, y;
+
+    if (text->parent) { // Check if rect is inside a container
+        x = text->parent->x + text->x; 
+        y = text->parent->y + text->y; 
+    } else {
+        x = text->x;
+        y = text->y;
+    }
+    xi_DrawText(grenderer, text->text,x,y, text->text_color,text->font_size);
 }
 
 // ----------- slider -----------------
