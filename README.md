@@ -1,2 +1,2 @@
-# xforms
+# X Interface
 Graphical user interface
