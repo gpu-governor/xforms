@@ -362,11 +362,22 @@ TextEntry CreateTextEntry(int x, int y, int width, int height, int font_size, Co
 
 // Render the text entry box with scrolling support
 void render_text_entry(TextEntry *entry) {
+        //------------------ for containers ------------
+        int x, y;
+
+        if (entry->parent) { // Check if rect is inside a container
+            x = entry->parent->x + entry->x; 
+            y = entry->parent->y + entry->y; 
+        } else {
+            x = entry->x;
+            y = entry->y;
+        }
+        //--------------------------
     // Draw background
-    xi_DrawRect(grenderer, entry->x, entry->y, entry->width, entry->height, entry->background_color, FILLED);
+    xi_DrawRect(grenderer, x, y, entry->width, entry->height, entry->background_color, FILLED);
 
     // Draw border
-    xi_DrawRect(grenderer, entry->x, entry->y, entry->width, entry->height, COLOR_BLUE, OUTLINE);
+    xi_DrawRect(grenderer, x, y, entry->width, entry->height, COLOR_BLUE, OUTLINE);
 
     // Determine max visible characters (adjust for padding)
     int max_visible_chars = (entry->width - 10) / 10;  // 10px padding on the left side
@@ -385,12 +396,12 @@ void render_text_entry(TextEntry *entry) {
     visible_text[max_visible_chars] = '\0';
 
     // Draw only the visible portion of text
-    xi_DrawText(grenderer,  visible_text, entry->x + 5, entry->y + 5, entry->text_color, entry->font_size);
+    xi_DrawText(grenderer,  visible_text, x + 5, y + 5, entry->text_color, entry->font_size);
 
     // Draw cursor
     if (entry->active) {
         int cursor_x = entry->x + 5 + ((entry->cursor_position - entry->text_offset) * 10);
-        xi_DrawRect(grenderer, cursor_x, entry->y + 5, 2, entry->font_size, entry->text_color, FILLED);
+        xi_DrawRect(grenderer, cursor_x, y + 5, 2, entry->font_size, entry->text_color, FILLED);
     }
 }
 
@@ -474,10 +485,19 @@ Label CreateLabel(int x, int y, int width, int height, const char *text, Color t
 }
 
 void render_label(Label *label) {
-    if (label->background_color.a != 0) {  // If not transparent
-        xi_DrawRect(grenderer, label->x, label->y, label->width, label->height, label->background_color, FILLED);
+    int x, y;
+
+    if (label->parent) { // Check if rect is inside a container
+        x = label->parent->x + label->x; 
+        y = label->parent->y + label->y; 
+    } else {
+        x = label->x;
+        y = label->y;
     }
-    xi_DrawText(grenderer, label->text, label->x + 5, label->y + 5, label->text_color, 16);
+    if (label->background_color.a != 0) {  // If not transparent
+        xi_DrawRect(grenderer, x, y, label->width, label->height, label->background_color, FILLED);
+    }
+    xi_DrawText(grenderer, label->text, x + 5,y + 5, label->text_color, 16);
 }
 
 // ---------------- Button Functions ----------------
@@ -488,6 +508,17 @@ Button CreateButton(int x, int y, int width, int height, const char *text, Color
 }
 
 void render_button(Button *button) {
+    //------------------ for containers ------------
+    int x, y;
+
+    if (button->parent) { // Check if rect is inside a container
+        x = button->parent->x + button->x; 
+        y = button->parent->y + button->y; 
+    } else {
+        x = button->x;
+        y = button->y;
+    }
+    //--------------------------
     Color current_color = button->background_color;
     if (button->clicked) {
         current_color = button->click_color;
@@ -495,8 +526,8 @@ void render_button(Button *button) {
         current_color = button->hover_color;
     }
 
-    xi_DrawRect(grenderer, button->x, button->y, button->width, button->height, current_color, FILLED);
-    xi_DrawText(grenderer,  button->text,button->x + 10, button->y + 10, button->text_color, 16);
+    xi_DrawRect(grenderer, x, y, button->width, button->height, current_color, FILLED);
+    xi_DrawText(grenderer,  button->text,x + 10, y + 10, button->text_color, 16);
 }
 
 void update_button(Button *button, SDL_Event *event) {
@@ -556,22 +587,33 @@ Slider CreateSlider(int x, int y, int width, int height, int min_value, int max_
 
 // Render the slider with a centered value
 void render_slider(Slider *slider) {
+        //------------------ for containers ------------
+        int x, y;
+
+        if (slider->parent) { // Check if rect is inside a container
+            x = slider->parent->x + slider->x; 
+            y = slider->parent->y + slider->y; 
+        } else {
+            x = slider->x;
+            y = slider->y;
+        }
+        //--------------------------
     // Draw the bar (track)
-    xi_DrawRect(grenderer, slider->x, slider->y, slider->width, slider->height, COLOR_WHITE, FILLED);
+    xi_DrawRect(grenderer, x, y, slider->width, slider->height, COLOR_WHITE, FILLED);
 
     // Calculate the thumb (handle) position
     float percentage = (float)(slider->value - slider->min_value) / (slider->max_value - slider->min_value);
-    int handle_x = slider->x + (int)(percentage * (slider->width - slider->height)); // Keep thumb inside the track
+    int handle_x = x + (int)(percentage * (slider->width - slider->height)); // Keep thumb inside the track
 
     // Draw the thumb (handle) inside the bar
-    xi_DrawRect(grenderer, handle_x, slider->y, slider->height, slider->height, COLOR_BLUE, FILLED);
+    xi_DrawRect(grenderer, handle_x, y, slider->height, slider->height, COLOR_BLUE, FILLED);
 
     // Render the value inside the thumb
     char value_text[16];
     snprintf(value_text, sizeof(value_text), "%d", slider->value);
 
     int text_x = handle_x + (slider->height / 4);  // Center inside the thumb
-    int text_y = slider->y + (slider->height / 4);
+    int text_y = y + (slider->height / 4);
 
     xi_DrawText(grenderer, value_text, text_x, text_y,  COLOR_WHITE,slider->height / 2);
 }

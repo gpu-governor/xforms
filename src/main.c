@@ -5,7 +5,7 @@
 // label
 // slider
 // entry
-#include"xform.h"
+#include"xi.h"
 const Color COLOR_BACKGROUND   = {30, 30, 30, 255};  // Dark background (VS Code dark)
 const Color COLOR_FOREGROUND   = {220, 220, 220, 255}; // Light gray text
 
